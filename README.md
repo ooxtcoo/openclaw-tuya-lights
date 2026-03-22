@@ -3,7 +3,8 @@
 Local Tuya lights control and web GUI for OpenClaw, with voice-friendly device registry, discovery, capabilities, and local LAN control.
 
 ## Inhalt
-- `tuya_lamps.json` – Registry aller bekannten Lampen und Gruppen
+- `tuya_lamps.json` – lokale Registry aller bekannten Lampen und Gruppen (nicht ins öffentliche Repo)
+- `tuya_lamps.example.json` – redacted Beispiel-Registry ohne echte Keys
 - `tuya_device_catalog.json` – lokaler Capability-/Typ-Katalog für bulb/plug/switch + spätere productKey-Mappings
 - `lamp_control.py` – lokales Steuer-CLI für on/off/status/brightness/color/group actions
 - `tuya_test_lamp.py` – Roh-Tester für eine einzelne Lampe per IP/devId/local_key
@@ -46,6 +47,11 @@ start-gui.bat
 ```
 
 Das Skript startet `gui-v1` via `npm start` in einem neuen Terminal und öffnet danach automatisch `http://127.0.0.1:5173` im Browser.
+
+## Security / lokale Keys
+- `tuya_lamps.json` enthält echte `local_key`-Secrets und ist bewusst **nicht** für das öffentliche Repo gedacht.
+- Für GitHub liegt stattdessen `tuya_lamps.example.json` bei.
+- Lokal einfach `tuya_lamps.example.json` als Vorlage verwenden bzw. die echte `tuya_lamps.json` behalten.
 
 ## Wichtige Regel
 Nach Repair / Re-Pair / Netzwerkwechsel kann sich der `local_key` ändern. Dann immer den Key neu extrahieren und `tuya_lamps.json` aktualisieren.

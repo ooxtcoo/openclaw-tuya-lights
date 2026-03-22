@@ -17,3 +17,7 @@ gui-v1/node_modules/
 # optional local runtime overrides
 .env
 .env.*
+
+# local secrets / machine-specific registry
+# keep a redacted sample in git, but never the live keys
+tuya_lamps.json
