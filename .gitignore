@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.tmp
+*.bak
+
+# local env / editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# node build/runtime
+gui-v1/node_modules/
+
+# optional local runtime overrides
+.env
+.env.*

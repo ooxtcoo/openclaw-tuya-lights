@@ -1,0 +1,19 @@
+{
+  "name": "tuya-lights-gui",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node ./node_modules/vite/bin/vite.js",
+    "build": "node ./node_modules/vite/bin/vite.js build",
+    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "api": "node backend/server.mjs",
+    "start": "node ./start-all.mjs"
+  },
+  "dependencies": {
+    "express": "^4.18",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "lamps": {
+    "kitchen": {
+      "name": "Küchenlampe",
+      "device_id": "bf1b87e27d0185eeaecbim",
+      "ip": "192.168.178.40",
+      "local_key": "RpDB`@ADz!pl|>z$",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "LSC/Tuya local control verified",
+      "dps": {
+        "power": 20,
+        "mode": 21,
+        "brightness": 22,
+        "unknown_23": 23,
+        "color_data": 25,
+        "unknown_26": 26,
+        "unknown_41": 41
+      },
+      "last_status_sample": {
+        "20": false,
+        "21": "white",
+        "22": 1000,
+        "23": 357,
+        "25": "000e0d0000000000000000c80000",
+        "26": 0,
+        "41": true
+      }
+    },
+    "livingroom_floor": {
+      "name": "Stehlampe Wohnzimmer",
+      "device_id": "bfe838f78a110f3934c1sw",
+      "ip": "192.168.178.35",
+      "local_key": "CS*1>W1b@5^jcy*x",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "LSC/Tuya local control verified on LAN; key refreshed after network repair; RGB capable",
+      "dps": {
+        "power": 20,
+        "light_param_24": 24,
+        "light_param_28": 28
+      },
+      "last_status_sample": {
+        "20": true,
+        "21": "colour",
+        "22": 1000,
+        "23": 1000,
+        "24": "011603e803e8",
+        "25": "000e0d0000000000000000c80000",
+        "26": 0,
+        "41": true
+      }
+    },
+    "vorzimmer1": {
+      "name": "Vorzimmer 1",
+      "device_id": "bf0609e687d53813d92wnk",
+      "ip": "192.168.178.47",
+      "local_key": "]-4-G@`.*xP+#+Pn",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "same type as livingroom_floor; extracted from LSC app",
+      "dps": {
+        "power": 20
+      }
+    },
+    "vorzimmer2": {
+      "name": "Vorzimmer 2",
+      "device_id": "bf78a3352af712c523yqpa",
+      "ip": "192.168.178.48",
+      "local_key": "<x?Mf$8t*0>1L&.B",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "same type as livingroom_floor; extracted from LSC app",
+      "dps": {
+        "power": 20
+      }
+    },
+    "vorzimmer3": {
+      "name": "Vorzimmer 3",
+      "device_id": "bf59fda8c433729edc6eho",
+      "ip": "192.168.178.49",
+      "local_key": "v._;7QpiGnQdZ+->",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "same type as livingroom_floor; extracted from LSC app",
+      "dps": {
+        "power": 20
+      }
+    },
+    "vorzimmer4": {
+      "name": "Vorzimmer 4",
+      "device_id": "bf512d269ca6588103nqva",
+      "ip": "192.168.178.50",
+      "local_key": "6'[N=-O?$O}n/DsX",
+      "version": 3.3,
+      "type": "bulb",
+      "notes": "same type as livingroom_floor; extracted from LSC app",
+      "dps": {
+        "power": 20
+      }
+    }
+  },
+  "groups": {
+    "all": [
+      "kitchen",
+      "livingroom_floor",
+      "vorzimmer1",
+      "vorzimmer2",
+      "vorzimmer3",
+      "vorzimmer4"
+    ],
+    "vorzimmer": [
+      "vorzimmer1",
+      "vorzimmer2",
+      "vorzimmer3",
+      "vorzimmer4"
+    ]
+  }
+}

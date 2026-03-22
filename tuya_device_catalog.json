@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "templates": {
+    "bulb": {
+      "label": "Lampe",
+      "icon": "💡",
+      "description": "Generic Tuya light bulb / RGB bulb template",
+      "capabilities": {
+        "power": true,
+        "brightness": true,
+        "white_temp": true,
+        "color": true,
+        "hue": true
+      },
+      "expected_dps": {
+        "power": [20],
+        "mode": [21],
+        "brightness": [22],
+        "temp": [23],
+        "color_data": [24, 25]
+      }
+    },
+    "plug": {
+      "label": "Steckdose",
+      "icon": "🔌",
+      "description": "Generic Tuya smart plug / socket",
+      "capabilities": {
+        "power": true,
+        "brightness": false,
+        "white_temp": false,
+        "color": false,
+        "hue": false
+      },
+      "expected_dps": {
+        "power": [1, 20]
+      }
+    },
+    "switch": {
+      "label": "Schalter",
+      "icon": "🎚️",
+      "description": "Generic Tuya switch / relay controller",
+      "capabilities": {
+        "power": true,
+        "brightness": false,
+        "white_temp": false,
+        "color": false,
+        "hue": false
+      },
+      "expected_dps": {
+        "power": [1, 20]
+      }
+    },
+    "device": {
+      "label": "Gerät",
+      "icon": "📦",
+      "description": "Fallback for unknown Tuya devices",
+      "capabilities": {
+        "power": true,
+        "brightness": false,
+        "white_temp": false,
+        "color": false,
+        "hue": false
+      },
+      "expected_dps": {}
+    }
+  },
+  "product_keys": {
+    "": {
+      "note": "Add productKey -> template mappings here when known from Tuya developer docs or discovery results."
+    }
+  }
+}
