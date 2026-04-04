@@ -56,6 +56,12 @@ API backend runs on: `http://127.0.0.1:4890`
 
 ---
 
+## Screenshot
+
+![Tuya Lights GUI](./screenshot.png)
+
+---
+
 ## Python CLI examples
 
 ```powershell
@@ -94,6 +100,7 @@ go build -o lampctl.exe .
 ## Notes
 
 The Go CLI variant is the better default choice for most users because it is standalone and does not require Python, extra libraries, or dependency setup.
+In real use, the Go CLI version also switches lamps noticeably faster than the Python variant and can feel close to instant.
 The Python variant stays in the repo because it is easier to inspect and modify, but it requires Python and the `tinytuya` module.
 
 After re-pairing / network repair, local keys can change.
