@@ -25,7 +25,7 @@ Local Tuya lights control for OpenClaw with **two controller variants in one rep
 - `main.go`
 - `go.mod`
 - `internal/` – CLI + Tuya LAN protocol implementation
-- compiled binary expected as `lampctl.exe` (Windows) or `lampctl` (Linux)
+- prebuilt binaries can be used directly as `lampctl.exe` (Windows) or `lampctl` (Linux/Android-Termux)
 
 ---
 
@@ -53,6 +53,67 @@ npm start
 Open: `http://127.0.0.1:5173`
 
 API backend runs on: `http://127.0.0.1:4890`
+
+---
+
+## Quick start (Linux / Android / Termux)
+
+Recommended: work from a normal Linux/Termux home directory such as `~/src/tuya-lights`, not from `/sdcard/...`, because Go builds and some tooling can fail on Android shared storage.
+
+### Go CLI
+
+If the `lampctl` binary is already present, you can use it directly without rebuilding:
+
+```bash
+cd ~/src/tuya-lights
+./lampctl stehlampe status
+./lampctl stehlampe on
+./lampctl stehlampe brightness --value 50
+./lampctl discover
+```
+
+If you want to compile it yourself:
+
+```bash
+cd ~/src/tuya-lights
+go build -o lampctl
+```
+
+### GUI + API together
+
+```bash
+cd ~/src/tuya-lights/gui-v1
+npm install
+node start-all.mjs
+```
+
+- GUI: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:4890`
+
+### API only
+
+```bash
+cd ~/src/tuya-lights/gui-v1
+npm install
+npm run api
+```
+
+### GUI / dev frontend only
+
+```bash
+cd ~/src/tuya-lights/gui-v1
+npm install
+npm run dev
+```
+
+### Quick API test
+
+```bash
+curl http://127.0.0.1:4890/api/health
+curl -X POST http://127.0.0.1:4890/api/status \
+  -H "Content-Type: application/json" \
+  -d '{"target":"stehlampe"}'
+```
 
 ---
 
@@ -102,6 +163,8 @@ go build -o lampctl.exe .
 The Go CLI variant is the better default choice for most users because it is standalone and does not require Python, extra libraries, or dependency setup.
 In real use, the Go CLI version also switches lamps noticeably faster than the Python variant and can feel close to instant.
 The Python variant stays in the repo because it is easier to inspect and modify, but it requires Python and the `tinytuya` module.
+
+The included OpenClaw skill should prefer `lampctl.exe` on Windows and `lampctl` on Linux/Android via relative project paths. If an installation uses a different layout, adjust the paths in `skills/tuya-lights/SKILL.md` to match the local project root.
 
 After re-pairing / network repair, local keys can change.
 If control suddenly fails, refresh `local_key` values in local `tuya_lamps.json`.
