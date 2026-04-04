@@ -48,6 +48,18 @@ function dpsToPct(v) { const n = Number(v); if (!Number.isFinite(n)) return null
 function dps24ToHue(v) { if (typeof v !== 'string' || v.length < 4) return null; const n = Number.parseInt(v.slice(0, 4), 16); if (!Number.isFinite(n)) return null; return Math.max(0, Math.min(360, n)); }
 function scheduleDebounced(key, fn, ms = 1000) { const old = debounceTimers.get(key); if (old) clearTimeout(old); const t = setTimeout(async () => { debounceTimers.delete(key); await fn(); }, ms); debounceTimers.set(key, t); }
 function setLampHealth(id, online, error = '') { lampHealth[id] = { online: Boolean(online), error: String(error || '') }; }
+function statusPayloadOnline(result) {
+  if (!result || typeof result !== 'object') return false;
+  if (typeof result.online === 'boolean') return result.online;
+  if (result.error) return false;
+  const dps = result?.result?.dps;
+  return Boolean(dps && typeof dps === 'object' && Object.keys(dps).length > 0);
+}
+function statusPayloadError(result) {
+  if (!result || typeof result !== 'object') return '';
+  if (result.error) return String(result.error);
+  return '';
+}
 function applyLampHealthToCard(id) { const card = app.querySelector(`[data-lamp-card="${id}"]`); if (!card) return; const st = lampHealth[id]; if (!st || st.online === undefined || st.online === null) return; const badge = card.querySelector(`[data-health-badge="${id}"]`); const offline = st.online === false; card.classList.toggle('offline', offline); card.querySelectorAll('[data-offline-disable="1"]').forEach((el) => { el.disabled = offline; }); if (badge) { badge.textContent = offline ? 'offline' : 'online'; badge.classList.toggle('is-offline', offline); badge.classList.toggle('is-online', !offline); badge.title = offline ? (st.error || 'Nicht erreichbar') : 'Erreichbar'; } }
 function applyLampHealthToAllCards() { Object.keys(registry?.lamps || {}).forEach((id) => applyLampHealthToCard(id)); }
 
@@ -67,7 +79,7 @@ async function syncLevelsFromStatus() {
       if (b !== null) uiLevels[id].brightness = b;
       if (t !== null) uiLevels[id].temp = t;
       if (h !== null) uiLevels[id].hue = h;
-      setLampHealth(id, true);
+      setLampHealth(id, statusPayloadOnline(r?.result), statusPayloadError(r?.result));
       applyLampHealthToCard(id);
     } catch (e) {
       setLampHealth(id, false, e.message || 'Status failed');
@@ -158,7 +170,7 @@ function wireEvents() {
   document.getElementById('modeLampctl')?.addEventListener('click', async () => { try { await setBackendMode('lampctl'); document.getElementById('backendModalBackdrop')?.classList.add('hidden'); } catch (e) { log(`Switch backend failed: ${e.message}`); } });
   document.getElementById('modePython')?.addEventListener('click', async () => { try { await setBackendMode('python'); document.getElementById('backendModalBackdrop')?.classList.add('hidden'); } catch (e) { log(`Switch backend failed: ${e.message}`); } });
   app.querySelectorAll('[data-group-member]').forEach((input) => { input.onchange = async () => { const id = input.getAttribute('data-group-member'); const groupName = input.getAttribute('data-group-name'); updateLampGroupMembership(id, groupName, input.checked); document.getElementById('groupsJson').value = JSON.stringify(registry.groups, null, 2); try { await persist(); log(`Updated groups for ${id}`); } catch (e) { log(`Group update failed: ${e.message}`); } }; });
-  app.querySelectorAll('[data-act]').forEach((btn) => { btn.onclick = async () => { const target = btn.getAttribute('data-target'); const action = btn.getAttribute('data-act'); try { const r = await runAction(target, action); if (action === 'status') { setLampHealth(target, true); const dps = r?.result?.result?.dps || {}; const lamp = registry?.lamps?.[target] || {}; lamp.last_status_sample = dps; const b = dpsToPct(dps['22']); const tRaw = dpsToPct(dps['23']); const t = displayTempPctForLamp(lamp, tRaw); const h = dps24ToHue(dps['24']); if (!uiLevels[target]) uiLevels[target] = { brightness: 50, temp: 50, hue: 0 }; if (b !== null) uiLevels[target].brightness = b; if (t !== null) uiLevels[target].temp = t; if (h !== null) uiLevels[target].hue = h; render(); log(`${target} ${action}: ${JSON.stringify(r.result)} | ${formatExec(r.exec)}`); return; } log(`${target} ${action}: ${JSON.stringify(r.result)} | ${formatExec(r.exec)}`); } catch (e) { if (action === 'status') { setLampHealth(target, false, e.message || 'Status failed'); applyLampHealthToCard(target); } log(`${target} ${action} failed: ${e.message} | ${formatExec(e?.payload?.exec)}`); } }; });
+  app.querySelectorAll('[data-act]').forEach((btn) => { btn.onclick = async () => { const target = btn.getAttribute('data-target'); const action = btn.getAttribute('data-act'); try { const r = await runAction(target, action); if (action === 'status') { const online = statusPayloadOnline(r?.result); setLampHealth(target, online, statusPayloadError(r?.result)); const dps = r?.result?.result?.dps || {}; const lamp = registry?.lamps?.[target] || {}; lamp.last_status_sample = dps; const b = dpsToPct(dps['22']); const tRaw = dpsToPct(dps['23']); const t = displayTempPctForLamp(lamp, tRaw); const h = dps24ToHue(dps['24']); if (!uiLevels[target]) uiLevels[target] = { brightness: 50, temp: 50, hue: 0 }; if (b !== null) uiLevels[target].brightness = b; if (t !== null) uiLevels[target].temp = t; if (h !== null) uiLevels[target].hue = h; render(); log(`${target} ${action}: ${JSON.stringify(r.result)} | ${formatExec(r.exec)}`); return; } log(`${target} ${action}: ${JSON.stringify(r.result)} | ${formatExec(r.exec)}`); } catch (e) { if (action === 'status') { setLampHealth(target, false, e.message || 'Status failed'); applyLampHealthToCard(target); } log(`${target} ${action} failed: ${e.message} | ${formatExec(e?.payload?.exec)}`); } }; });
   app.querySelectorAll('[data-group]').forEach((btn) => { btn.onclick = async () => { const target = btn.getAttribute('data-group'); try { const r = await runAction(target, 'off'); log(`${target} off: ${JSON.stringify(r.result)} | ${formatExec(r.exec)}`); } catch (e) { log(`${target} off failed: ${e.message} | ${formatExec(e?.payload?.exec)}`); } }; });
   app.querySelectorAll('[data-del]').forEach((btn) => { btn.onclick = async () => { const id = btn.getAttribute('data-del'); if (!confirm(`Delete lamp ${id}?`)) return; delete registry.lamps[id]; for (const g of Object.keys(registry.groups || {})) registry.groups[g] = (registry.groups[g] || []).filter(x => x !== id); try { await persist(); log(`Deleted lamp ${id}`); await load(); } catch (e) { log(`Delete failed: ${e.message}`); } }; });
   app.querySelectorAll('[data-onboard-discovered]').forEach((btn) => { btn.onclick = () => { const i = Number(btn.getAttribute('data-onboard-discovered')); const d = discovered[i]; if (!d) return; const suggested = (btn.getAttribute('data-suggested-id') || '').toLowerCase(); onboardingDraft = { id: suggested, name: d.name || suggested, ip: d.ip || '', device_id: d.gwId || '', local_key: '', version: String(Number(d.version || 3.3) || 3.3), productKey: d.productKey || '', category: d.category || d.categoryCode || '' }; render(); log(`Loaded discovery item into onboarding: ${suggested}. Add local_key to test/save.`); document.getElementById('addId')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }; });

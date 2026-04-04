@@ -97,6 +97,17 @@ async function runDiscover() {
 }
 
 function tryParseJSON(raw) { try { return JSON.parse(raw); } catch { return raw; } }
+function normalizeStatusResult(parsed) {
+  const base = (parsed && typeof parsed === 'object') ? { ...parsed } : { raw: parsed };
+  const hasError = Boolean(base?.error);
+  const dps = base?.result?.dps;
+  const hasDps = Boolean(dps && typeof dps === 'object' && Object.keys(dps).length > 0);
+  return {
+    ...base,
+    online: !hasError && hasDps,
+    error: hasError ? String(base.error) : ''
+  };
+}
 function normalizeDiscoverResult(parsed) {
   if (parsed && typeof parsed === 'object' && Array.isArray(parsed.devices)) return parsed;
   if (Array.isArray(parsed)) return { ok: true, count: parsed.length, devices: parsed.map((item) => ({ ip: item.ip, gwId: item.gwId, version: item.version, productKey: item.productKey, name: item.data?.name || item.name || '', raw: item })) };
@@ -124,7 +135,7 @@ app.get('/api/lamps', async (_req, res) => { try { res.json(await loadRegistry()
 app.get('/api/catalog', async (_req, res) => { try { res.json(await loadCatalog()); } catch (e) { res.status(500).json({ error: String(e.message || e) }); } });
 app.put('/api/lamps', async (req, res) => { try { const next = req.body; if (!next || typeof next !== 'object' || !next.lamps) return res.status(400).json({ error: 'Invalid registry payload (need lamps object)' }); await saveRegistry(next); res.json({ ok: true }); } catch (e) { res.status(500).json({ error: String(e.message || e) }); } });
 app.post('/api/action', async (req, res) => { try { const { target, action, value } = req.body || {}; if (!target || !action) return res.status(400).json({ error: 'target and action required' }); const exec = await runAction(target, action, value); res.json({ ok: true, result: tryParseJSON(exec.stdout), exec }); } catch (e) { res.status(500).json({ error: 'Action failed', exec: e }); } });
-app.post('/api/status', async (req, res) => { try { const { target } = req.body || {}; if (!target) return res.status(400).json({ error: 'target required' }); const exec = await runStatus(target); res.json({ ok: true, result: tryParseJSON(exec.stdout), exec }); } catch (e) { res.status(500).json({ error: 'Status failed', exec: e }); } });
+app.post('/api/status', async (req, res) => { try { const { target } = req.body || {}; if (!target) return res.status(400).json({ error: 'target required' }); const exec = await runStatus(target); res.json({ ok: true, result: normalizeStatusResult(tryParseJSON(exec.stdout)), exec }); } catch (e) { res.status(500).json({ error: 'Status failed', exec: e }); } });
 app.post('/api/discover', async (_req, res) => { try { const exec = await runDiscover(); res.json({ ok: true, result: normalizeDiscoverResult(tryParseJSON(exec.stdout)), exec }); } catch (e) { res.status(500).json({ error: 'Discover failed', exec: e }); } });
 
 const PORT = Number(process.env.TUYA_GUI_API_PORT || 4890);
