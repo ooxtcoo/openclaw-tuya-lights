@@ -1,7 +1,20 @@
 import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const api = spawn('npm run api', { stdio: 'inherit', shell: true });
-const dev = spawn('npm run dev', { stdio: 'inherit', shell: true });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
+const lampctlBasename = process.platform === 'win32' ? 'lampctl.exe' : 'lampctl';
+const lampctlPath = path.join(projectRoot, lampctlBasename);
+
+const env = {
+  ...process.env,
+  TUYA_GUI_API_PORT: process.env.TUYA_GUI_API_PORT || '4890',
+};
+
+const api = spawn('npm run api', { stdio: 'inherit', shell: true, env, cwd: __dirname });
+const dev = spawn('npm run dev', { stdio: 'inherit', shell: true, env, cwd: __dirname });
 
 function shutdown() {
   try { api.kill(); } catch {}

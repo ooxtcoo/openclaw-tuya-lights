@@ -9,13 +9,13 @@
       "type": "bulb",
       "notes": "LSC/Tuya local control verified",
       "dps": {
-        "power": 20,
-        "mode": 21,
-        "brightness": 22,
-        "unknown_23": 23,
-        "color_data": 25,
-        "unknown_26": 26,
-        "unknown_41": 41
+        "switch_led": 20,
+        "work_mode": 21,
+        "bright_value": 22,
+        "temp_value": 23,
+        "scene_data": 25,
+        "dp_26_unmapped": 26,
+        "dp_41_unmapped": 41
       },
       "last_status_sample": {
         "20": false,
@@ -36,9 +36,9 @@
       "type": "bulb",
       "notes": "LSC/Tuya local control verified on LAN; key refreshed after network repair; RGB capable",
       "dps": {
-        "power": 20,
-        "light_param_24": 24,
-        "light_param_28": 28
+        "switch_led": 20,
+        "colour_data": 24,
+        "control_data": 28
       },
       "last_status_sample": {
         "20": true,
