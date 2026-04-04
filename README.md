@@ -2,22 +2,22 @@
 
 Local Tuya lights control for OpenClaw with **two controller variants in one repo**:
 
-1. **Python controller** (stable / original)
-2. **Go CLI controller** (standalone binary path, no Python runtime needed for control)
+1. **Python controller** (Python variant of the Tuya light controllers)
+2. **Go CLI controller** (standalone binary, no Python runtime needed for control)
 
 ---
 
 ## Project layout
 
 ### Shared files
-- `tuya_lamps.json` – local device/group registry (**contains real keys, do not publish**)
+- `tuya_lamps.json` – local device/group registry (commit only sanitized `local_key` values like `xxxx`)
 - `tuya_lamps.example.json` – sanitized example registry for git
 - `tuya_device_catalog.json` – capability/type metadata used by GUI
 - `gui-v1/` – web GUI + local API backend
 - `start-gui.bat` – convenience starter
 
 ### Python variant
-- `lamp_control.py` – main Python Tuya controller
+- `lamp_control.py` – Python Tuya controller
 - `discover_lamps.py` – Python LAN discovery
 - `tuya_test_lamp.py` – low-level lamp test
 
@@ -25,7 +25,6 @@ Local Tuya lights control for OpenClaw with **two controller variants in one rep
 - `main.go`
 - `go.mod`
 - `internal/` – CLI + Tuya LAN protocol implementation
-- `scripts/` – helper scripts (e.g. smoke tests)
 - compiled binary expected as `lampctl.exe` (Windows) or `lampctl` (Linux)
 
 ---
@@ -84,13 +83,18 @@ go build -o lampctl.exe .
 
 ## Security / keys
 
-- Never commit real `tuya_lamps.json` with `local_key` values.
+- `tuya_lamps.json` is required by the project, but committed versions must have `local_key` values sanitized (for example `xxxx`).
 - Keep real keys local only.
-- Commit only `tuya_lamps.example.json`.
+- `tuya_lamps.example.json` is included as an additional sanitized example.
+- `FRIDA_HOOK/` contains the files and instructions users need to extract their own local keys for their devices.
+- Without a valid `local_key`, local Tuya control will not work.
 
 ---
 
 ## Notes
+
+The Go CLI variant is the better default choice for most users because it is standalone and does not require Python, extra libraries, or dependency setup.
+The Python variant stays in the repo because it is easier to inspect and modify, but it requires Python and the `tinytuya` module.
 
 After re-pairing / network repair, local keys can change.
 If control suddenly fails, refresh `local_key` values in local `tuya_lamps.json`.
