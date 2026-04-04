@@ -21,3 +21,7 @@ gui-v1/node_modules/
 # local secrets / machine-specific registry
 # keep a redacted sample in git, but never the live keys
 tuya_lamps.json
+
+# local binaries
+*.exe
+lampctl

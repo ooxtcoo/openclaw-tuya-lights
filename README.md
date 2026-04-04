@@ -1,57 +1,96 @@
 # openclaw-tuya-lights
 
-Local Tuya lights control and web GUI for OpenClaw, with voice-friendly device registry, discovery, capabilities, and local LAN control.
+Local Tuya lights control for OpenClaw with **two controller variants in one repo**:
 
-## Inhalt
-- `tuya_lamps.json` – lokale Registry aller bekannten Lampen und Gruppen (nicht ins öffentliche Repo)
-- `tuya_lamps.example.json` – redacted Beispiel-Registry ohne echte Keys
-- `tuya_device_catalog.json` – lokaler Capability-/Typ-Katalog für bulb/plug/switch + spätere productKey-Mappings
-- `lamp_control.py` – lokales Steuer-CLI für on/off/status/brightness/color/group actions
-- `tuya_test_lamp.py` – Roh-Tester für eine einzelne Lampe per IP/devId/local_key
-- `start-gui.bat` – startet GUI/API bequem und öffnet den Browser automatisch
-- `KEY_EXTRACTION.md` – dokumentiert exakt, wie die Keys aus der LSC-App geholt wurden
-- `ONBOARDING.md` – kurzer Ablauf für neue oder neu gepairte Lampen
-- `skills/tuya-lights/SKILL.md` – Skill, damit Atlas Lampenbefehle direkt versteht
+1. **Python controller** (stable / original)
+2. **Go CLI controller** (standalone binary path, no Python runtime needed for control)
 
-## Schnellbefehle
+---
+
+## Project layout
+
+### Shared files
+- `tuya_lamps.json` – local device/group registry (**contains real keys, do not publish**)
+- `tuya_lamps.example.json` – sanitized example registry for git
+- `tuya_device_catalog.json` – capability/type metadata used by GUI
+- `gui-v1/` – web GUI + local API backend
+- `start-gui.bat` – convenience starter
+
+### Python variant
+- `lamp_control.py` – main Python Tuya controller
+- `discover_lamps.py` – Python LAN discovery
+- `tuya_test_lamp.py` – low-level lamp test
+
+### Go CLI variant
+- `main.go`
+- `go.mod`
+- `internal/` – CLI + Tuya LAN protocol implementation
+- `scripts/` – helper scripts (e.g. smoke tests)
+- compiled binary expected as `lampctl.exe` (Windows) or `lampctl` (Linux)
+
+---
+
+## How backend mode is selected
+
+The GUI backend auto-detects what is available in the project root:
+
+- if CLI binary exists (`lampctl.exe` on Windows / `lampctl` on Linux) → CLI available
+- if `lamp_control.py` + `discover_lamps.py` exist → Python available
+- if both exist → both can be selected in GUI
+- if only one exists → that one is used
+
+The GUI shows only backend options that are actually available.
+
+---
+
+## Quick start (Windows)
+
 ```powershell
-python C:\Users\1111\.openclaw\workspace\tuya-lights\lamp_control.py stehlampe on
-python C:\Users\1111\.openclaw\workspace\tuya-lights\lamp_control.py stehlampe off
-python C:\Users\1111\.openclaw\workspace\tuya-lights\lamp_control.py stehlampe brightness --value 50
-python C:\Users\1111\.openclaw\workspace\tuya-lights\lamp_control.py stehlampe color --value red
-python C:\Users\1111\.openclaw\workspace\tuya-lights\lamp_control.py all off
+cd C:\Users\1111\.openclaw\workspace\tuya-lights\gui-v1
+npm install
+npm start
 ```
 
-## Aktuell bekannte Lampen
-- `kitchen` – Küchenlampe
-- `livingroom_floor` – Stehlampe Wohnzimmer
-- `vorzimmer1`
-- `vorzimmer2`
-- `vorzimmer3`
-- `vorzimmer4`
-- Gruppe `vorzimmer`
+Open: `http://127.0.0.1:5173`
 
-## Device catalog / capability layer
+API backend runs on: `http://127.0.0.1:4890`
 
-- Der lokale Katalog `tuya_device_catalog.json` normalisiert Gerätetypen (`bulb`, `plug`, `switch`, fallback `device`).
-- Die GUI nutzt ihn für freundliche Typnamen, Icons und um nur passende Controls anzuzeigen.
-- Unter `product_keys` kann später gezielt gemappt werden: `productKey -> template/type/model/image`.
-- So können wir Tuya-Developer-Infos schrittweise lokal übernehmen, ohne Cloud-Zwang.
+---
 
-## GUI bequem starten
+## Python CLI examples
 
-Einfach doppelklicken:
-
-```bat
-start-gui.bat
+```powershell
+python .\lamp_control.py stehlampe on
+python .\lamp_control.py stehlampe off
+python .\lamp_control.py stehlampe brightness --value 50
+python .\lamp_control.py stehlampe color --value red
+python .\lamp_control.py all off
 ```
 
-Das Skript startet `gui-v1` via `npm start` in einem neuen Terminal und öffnet danach automatisch `http://127.0.0.1:5173` im Browser.
+---
 
-## Security / lokale Keys
-- `tuya_lamps.json` enthält echte `local_key`-Secrets und ist bewusst **nicht** für das öffentliche Repo gedacht.
-- Für GitHub liegt stattdessen `tuya_lamps.example.json` bei.
-- Lokal einfach `tuya_lamps.example.json` als Vorlage verwenden bzw. die echte `tuya_lamps.json` behalten.
+## Go CLI examples
 
-## Wichtige Regel
-Nach Repair / Re-Pair / Netzwerkwechsel kann sich der `local_key` ändern. Dann immer den Key neu extrahieren und `tuya_lamps.json` aktualisieren.
+```powershell
+go build -o lampctl.exe .
+.\lampctl.exe stehlampe status
+.\lampctl.exe stehlampe on
+.\lampctl.exe stehlampe brightness --value 50
+.\lampctl.exe stehlampe hue --value 180
+.\lampctl.exe discover
+```
+
+---
+
+## Security / keys
+
+- Never commit real `tuya_lamps.json` with `local_key` values.
+- Keep real keys local only.
+- Commit only `tuya_lamps.example.json`.
+
+---
+
+## Notes
+
+After re-pairing / network repair, local keys can change.
+If control suddenly fails, refresh `local_key` values in local `tuya_lamps.json`.
