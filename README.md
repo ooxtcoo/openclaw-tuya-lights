@@ -23,7 +23,10 @@ If you still want to keep it around for reference or recovery, place it in a sep
 
 - `main.go` - CLI entry point
 - `internal/` - Go CLI and Tuya LAN protocol code
-- `lampctl.exe` / `lampctl` - prebuilt CLI binary
+- `lampctl.exe` - prebuilt Windows CLI binary
+- `lampctl-linux-amd64` - prebuilt Linux CLI binary
+- `lampctl-macos-amd64` - prebuilt macOS Intel CLI binary
+- `lampctl-macos-arm64` - prebuilt macOS Apple Silicon CLI binary
 - `gui-v1/` - web GUI and local API backend
 - `tuya_lamps.json` - local live registry, ignored by git
 - `tuya_lamps.example.json` - sanitized example registry for git
@@ -141,6 +144,7 @@ Compared to the old Python path, the current Go-based version is:
 - simpler to deploy
 - easier to ship as a standalone tool
 - cleaner to maintain as one supported path
+- ready to use with bundled binaries for Windows, Linux, and macOS
 
 ## Screenshot
 
