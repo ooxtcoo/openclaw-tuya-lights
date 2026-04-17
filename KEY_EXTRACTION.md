@@ -1,41 +1,48 @@
-# Key Extraction / Reverse Engineering Notes
+# Key extraction / reverse engineering notes
 
-## Ziel
-Aus der laufenden **LSC Smart Connect** App die für lokale Tuya-Steuerung nötigen Daten ziehen:
+## Goal
+
+Extract the data needed for local Tuya control from the running **LSC Smart Connect** app:
+
 - `devId`
 - `local_key`
 - `productId`
 - `uuid`
-- später per LAN zusätzlich: `ip`, `version`, DPS
+- later via LAN: `ip`, `version`, DPS
 
-## Wichtige Erkenntnisse
-- Reines Filesystem-Dumping der App reicht bei aktuellen Versionen meist **nicht**.
-- Wireshark liefert oft nicht den `local_key`.
-- Der brauchbare Weg war hier: **gerootetes Android + Frida Hooking + laufende LSC-App**.
-- Nach Repair / Netzwerkwechsel kann sich der `local_key` ändern.
+## Important findings
 
-## Erfolgreicher Flow
-1. Handy per **ADB** verbinden.
-2. Falls nötig `frida-tools` lokal installieren.
-3. Passenden `frida-server` auf das Handy pushen und per Root starten.
-4. LSC-App öffnen.
-5. Frida-Skript an die laufende App hängen.
-6. In der App die gewünschte Lampe öffnen und kurz bedienen (an/aus, Helligkeit, Farbe).
-7. In den Hook-Logs `devId`, `local_key`, `productId`, `uuid` ablesen.
-8. Lokale IP der Lampe separat im LAN ermitteln.
-9. Mit `tuya_test_lamp.py --probe` Version testen.
-10. Erfolgreiche Daten in `tuya_lamps.json` eintragen.
+- Pure filesystem dumping is usually not enough on current app versions.
+- Wireshark often does not reveal the `local_key`.
+- The practical path here was: **rooted Android + Frida hooking + running LSC app**.
+- After repair or network changes, the `local_key` may change.
 
-## Warum das funktioniert
-Die App hält die entschlüsselten Geräteobjekte im RAM. Beim Öffnen/Steuern einer Lampe laufen diese Objekte durch die App-Logik und lassen sich hooken. Genau dort konnten `getLocalKey()` / `getDevId()` etc. abgegriffen werden.
+## Working flow
 
-## Bekannte Stolpersteine
-- App erkennt Root/Hooking manchmal → in Magisk verstecken / DenyList nutzen.
-- App-PID wechselt manchmal → frisch attachen.
-- `getIp()` aus dem App-Objekt war hier **nicht zuverlässig** und zeigte teils externe Adressen; LAN-IP separat verifizieren.
-- Bei manchen Lampen änderte sich der `local_key` nach Netzwerk-Repair.
+1. Connect the phone via **ADB**.
+2. Install `frida-tools` locally if needed.
+3. Push the matching `frida-server` to the phone and start it as root.
+4. Open the LSC app.
+5. Attach the Frida script to the running app.
+6. Open the target lamp in the app and briefly control it.
+7. Read `devId`, `local_key`, `productId`, and `uuid` from the hook logs.
+8. Determine the lamp's local IP separately in the LAN.
+9. Test with `lampctl <name> status`.
+10. Save the working data to `tuya_lamps.json`.
 
-## Bereits bewiesen
-- Küchenlampe lokal auf **3.3** steuerbar
-- Stehlampe Wohnzimmer lokal auf **3.3** steuerbar
-- `all off` lokal erfolgreich
+## Why this works
+
+The app keeps decrypted device objects in memory. When a lamp is opened or controlled, those objects pass through the app logic and can be hooked there. That is where `getLocalKey()` / `getDevId()` and related values were captured.
+
+## Known pitfalls
+
+- The app may detect root / hooking, so hide it with Magisk / DenyList if needed.
+- The app PID can change, so attach again if necessary.
+- `getIp()` from the app object was not reliable here and sometimes returned external addresses, so verify the LAN IP separately.
+- Some lamps changed their `local_key` after network repair.
+
+## Proven locally
+
+- Kitchen lamp works locally on **3.3**
+- Living room floor lamp works locally on **3.3**
+- `all off` worked locally

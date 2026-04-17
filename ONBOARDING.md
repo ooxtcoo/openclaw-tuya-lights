@@ -1,26 +1,31 @@
-# Onboarding neuer Lampen
+# Onboarding new lamps
 
-## Standardablauf
-1. Lampe ins erreichbare WLAN/LAN bringen.
-2. `devId` in der LSC-App nachsehen oder im Hook mitloggen.
-3. Key per Frida aus der laufenden App ziehen.
-4. Lokale IP der Lampe im LAN prüfen.
-5. Mit `tuya_test_lamp.py --probe` gegen die IP testen.
-6. Erfolgreiche Kombination in `tuya_lamps.json` eintragen.
-7. Mit `lamp_control.py <name> on/off/status` verifizieren.
+## Standard flow
 
-## Wenn Repair / Re-Pair nötig war
-- Immer davon ausgehen, dass der `local_key` neu sein könnte.
-- Alten Key nicht vertrauen.
-- Key frisch extrahieren.
+1. Connect the lamp to the reachable local Wi-Fi / LAN.
+2. Read the `devId` from the LSC app or capture it with the hook.
+3. Extract the key from the running app.
+4. Verify the lamp's local IP in the LAN.
+5. Test the device with `lampctl <name> status`.
+6. If needed, verify switching with `lampctl <name> on` / `off`.
+7. Store the working data in `tuya_lamps.json`.
 
-## Gruppen
-Wenn mehrere Lampen fast immer gemeinsam geschaltet werden:
-- einzelne Lampen normal in `tuya_lamps.json` eintragen
-- zusätzlich Gruppe in `groups` anlegen
-- Beispiel: `vorzimmer` -> `vorzimmer1..4`
+## After repair / re-pair
 
-## Namensschema
-- Gruppen: `vorzimmer`, `wohnzimmer`, `schlafzimmer`
-- Einzellampen: `vorzimmer1`, `vorzimmer2`, ...
-- Menschenlesbarer Anzeigename bleibt zusätzlich im JSON.
+- Always assume the `local_key` may have changed.
+- Do not trust the old key.
+- Extract the key again.
+
+## Groups
+
+If several lamps are usually switched together:
+
+- add the individual lamps normally in `tuya_lamps.json`
+- create a group in `groups`
+- example: `hallway` -> `hallway1..4`
+
+## Naming
+
+- groups: `hallway`, `living_room`, `bedroom`
+- single lamps: `hallway1`, `hallway2`, ...
+- the human-readable display name still lives in JSON as `name`

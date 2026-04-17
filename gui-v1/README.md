@@ -1,19 +1,19 @@
 # Tuya Lights GUI v1
 
-Local professional dashboard for Tuya lamp control.
+Clean local dashboard for Tuya lamp control.
 
-## Features (v1)
-- View all lamps from `../tuya_lamps.json`
-- Quick actions: on/off/status
-- Add / edit / delete lamps
-- Modal editor (professional flow instead of browser prompt)
-- Per-lamp brightness slider (auto-apply after 1s idle) + quick color buttons
-- Per-lamp color-temperature slider (cold → warm, auto-apply)
-- Value sync from live status (DP22/DP23)
-- Network discovery (find Tuya devices on LAN and prefill registry entries)
-- Group editor + quick group OFF buttons
-- JSON registry editor (save back to file)
-- Logs for actions and errors
+## Features
+
+- view all lamps from `../tuya_lamps.json`
+- quick actions: on / off / status
+- add / edit / delete lamps
+- drag-and-drop lamp ordering
+- visual group management
+- per-lamp brightness, white temperature, and color controls
+- discovery scan for Tuya devices on the local network
+- registry diagnostics and repair tools
+- raw JSON and log panels hidden behind collapsible sections
+- German / English language switcher
 
 ## Run
 
@@ -25,7 +25,7 @@ npm start
 
 Open: `http://127.0.0.1:5173`
 
-Alternative (separate terminals):
+Alternative:
 
 ```powershell
 npm run api
@@ -34,28 +34,14 @@ npm run dev
 
 API: `http://127.0.0.1:4890`
 
-## Backend modes
+## Runtime model
 
-The backend can call either the Python controller or the new Go binary.
-
-### Default: Python backend
-No extra configuration is needed.
-
-### Go backend via lampctl.exe
-
-```powershell
-$env:TUYA_USE_LAMPCTL='1'
-$env:LAMPCTL_PATH='C:\Users\1111\.openclaw\workspace\lampctl\lampctl.exe'
-npm run api
-```
-
-If `LAMPCTL_PATH` is not set, the backend tries this default path:
-
-```text
-C:\Users\1111\.openclaw\workspace\lampctl\lampctl.exe
-```
+The GUI backend now uses the Go CLI only.
+There is no active Python backend path anymore.
 
 ## Notes
-- Source of truth remains `..\tuya_lamps.json`.
-- `tuya_device_catalog.json` is GUI metadata for templates/capabilities and is not required by the CLI runtime itself.
-- The backend normalizes discovery results so the GUI can work with both Python and Go discovery.
+
+- Source of truth remains `../tuya_lamps.json`.
+- `tuya_device_catalog.json` is GUI metadata for templates and capabilities.
+- The backend normalizes the registry on load/save.
+- Discovery is executed through `lampctl discover`.

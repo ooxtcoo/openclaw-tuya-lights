@@ -1,48 +1,41 @@
 # openclaw-tuya-lights
 
-Local Tuya lights control for OpenClaw with **two controller variants in one repo**:
+Fast local Tuya light control for OpenClaw, centered on a Go-based CLI and a clean web GUI.
 
-1. **Python controller** (Python variant of the Tuya light controllers)
-2. **Go CLI controller** (standalone binary, no Python runtime needed for control)
+This project has now moved to a **Go-first architecture**.
+The old Python implementation is no longer part of the active runtime path.
+If you still want to keep it around for reference or recovery, place it in a separate `legacy-python/` folder.
 
----
+## Highlights
+
+- Fast local control via `lampctl`
+- Device and group control from one registry
+- GUI with:
+  - drag-and-drop lamp reordering
+  - visual group management
+  - clean advanced/debug sections
+  - registry validation + repair tools
+  - German / English language switcher
+- Group commands directly in the CLI
+- No Python dependency in the active app path
 
 ## Project layout
 
-### Shared files
-- `tuya_lamps.json` – local device/group registry (commit only sanitized `local_key` values like `xxxx`)
-- `tuya_lamps.example.json` – sanitized example registry for git
-- `tuya_device_catalog.json` – capability/type metadata used by GUI
-- `gui-v1/` – web GUI + local API backend
-- `start-gui.bat` – convenience starter
+- `main.go` - CLI entry point
+- `internal/` - Go CLI and Tuya LAN protocol code
+- `lampctl.exe` / `lampctl` - prebuilt CLI binary
+- `gui-v1/` - web GUI and local API backend
+- `tuya_lamps.json` - local live registry, ignored by git
+- `tuya_lamps.example.json` - sanitized example registry for git
+- `tuya_device_catalog.json` - capability metadata used by the GUI
+- `FRIDA_HOOK/` - reference material for extracting local keys
+- `ONBOARDING.md` - notes for adding or repairing devices
+- `KEY_EXTRACTION.md` - local key extraction notes
+- `start-gui.bat` - Windows convenience starter
 
-### Python variant
-- `lamp_control.py` – Python Tuya controller
-- `discover_lamps.py` – Python LAN discovery
-- `tuya_test_lamp.py` – low-level lamp test
+## Quick start
 
-### Go CLI variant
-- `main.go`
-- `go.mod`
-- `internal/` – CLI + Tuya LAN protocol implementation
-- prebuilt binaries can be used directly as `lampctl.exe` (Windows) or `lampctl` (Linux/Android-Termux)
-
----
-
-## How backend mode is selected
-
-The GUI backend auto-detects what is available in the project root:
-
-- if CLI binary exists (`lampctl.exe` on Windows / `lampctl` on Linux) → CLI available
-- if `lamp_control.py` + `discover_lamps.py` exist → Python available
-- if both exist → both can be selected in GUI
-- if only one exists → that one is used
-
-The GUI shows only backend options that are actually available.
-
----
-
-## Quick start (Windows)
+### Windows
 
 ```powershell
 cd C:\Users\1111\.openclaw\workspace\tuya-lights\gui-v1
@@ -50,36 +43,10 @@ npm install
 npm start
 ```
 
-Open: `http://127.0.0.1:5173`
+GUI: `http://127.0.0.1:5173`
+API: `http://127.0.0.1:4890`
 
-API backend runs on: `http://127.0.0.1:4890`
-
----
-
-## Quick start (Linux / Android / Termux)
-
-Recommended: work from a normal Linux/Termux home directory such as `~/src/tuya-lights`, not from `/sdcard/...`, because Go builds and some tooling can fail on Android shared storage.
-
-### Go CLI
-
-If the `lampctl` binary is already present, you can use it directly without rebuilding:
-
-```bash
-cd ~/src/tuya-lights
-./lampctl stehlampe status
-./lampctl stehlampe on
-./lampctl stehlampe brightness --value 50
-./lampctl discover
-```
-
-If you want to compile it yourself:
-
-```bash
-cd ~/src/tuya-lights
-go build -o lampctl
-```
-
-### GUI + API together
+### Linux / Android / Termux
 
 ```bash
 cd ~/src/tuya-lights/gui-v1
@@ -87,84 +54,94 @@ npm install
 node start-all.mjs
 ```
 
-- GUI: `http://127.0.0.1:5173`
-- API: `http://127.0.0.1:4890`
+GUI: `http://127.0.0.1:5173`
+API: `http://127.0.0.1:4890`
 
-### API only
+## CLI usage
 
-```bash
-cd ~/src/tuya-lights/gui-v1
-npm install
-npm run api
-```
-
-### GUI / dev frontend only
-
-```bash
-cd ~/src/tuya-lights/gui-v1
-npm install
-npm run dev
-```
-
-### Quick API test
-
-```bash
-curl http://127.0.0.1:4890/api/health
-curl -X POST http://127.0.0.1:4890/api/status \
-  -H "Content-Type: application/json" \
-  -d '{"target":"stehlampe"}'
-```
-
----
-
-## Screenshot
-
-![Tuya Lights GUI](./screenshot.png)
-
----
-
-## Python CLI examples
+### Standard lamp actions
 
 ```powershell
-python .\lamp_control.py stehlampe on
-python .\lamp_control.py stehlampe off
-python .\lamp_control.py stehlampe brightness --value 50
-python .\lamp_control.py stehlampe color --value red
-python .\lamp_control.py all off
-```
-
----
-
-## Go CLI examples
-
-```powershell
-go build -o lampctl.exe .
 .\lampctl.exe stehlampe status
 .\lampctl.exe stehlampe on
+.\lampctl.exe stehlampe off
 .\lampctl.exe stehlampe brightness --value 50
 .\lampctl.exe stehlampe hue --value 180
 .\lampctl.exe discover
 ```
 
----
+### Group management
 
-## Security / keys
+```powershell
+.\lampctl.exe group list
+.\lampctl.exe group create wohnzimmer
+.\lampctl.exe group add wohnzimmer stehlampe_wohnzimmer
+.\lampctl.exe group remove wohnzimmer stehlampe_wohnzimmer
+.\lampctl.exe group delete wohnzimmer
+```
 
-- `tuya_lamps.json` is required by the project, but committed versions must have `local_key` values sanitized (for example `xxxx`).
-- Keep real keys local only.
-- `tuya_lamps.example.json` is included as an additional sanitized example.
-- `FRIDA_HOOK/` contains the files and instructions users need to extract their own local keys for their devices.
-- Without a valid `local_key`, local Tuya control will not work.
+## GUI features
 
----
+### Daily use
 
-## Notes
+- switch lamps on and off
+- set brightness
+- set white temperature
+- set colors
+- reorder lamps
+- control groups
 
-The Go CLI variant is the better default choice for most users because it is standalone and does not require Python, extra libraries, or dependency setup.
-In real use, the Go CLI version also switches lamps noticeably faster than the Python variant and can feel close to instant.
-The Python variant stays in the repo because it is easier to inspect and modify, but it requires Python and the `tinytuya` module.
+### Advanced tools
 
-The included OpenClaw skill should prefer `lampctl.exe` on Windows and `lampctl` on Linux/Android via relative project paths. If an installation uses a different layout, adjust the paths in `skills/tuya-lights/SKILL.md` to match the local project root.
+Hidden behind collapsible sections so the default UI stays clean:
 
-After re-pairing / network repair, local keys can change.
-If control suddenly fails, refresh `local_key` values in local `tuya_lamps.json`.
+- onboarding for new devices
+- discovery scan
+- registry diagnostics
+- repair / normalize action
+- raw JSON editors
+- debug log
+
+## Registry model
+
+The live registry is stored in `tuya_lamps.json`.
+That file is **local only** and should not be committed with real keys.
+
+For sharing the repo, use `tuya_lamps.example.json` instead.
+
+Important fields:
+
+- `name`
+- `device_id`
+- `ip`
+- `local_key`
+- `version`
+- `type`
+- `dps`
+- `sort_order`
+- `groups`
+
+## Security
+
+- Never commit real `local_key` values.
+- Keep `tuya_lamps.json` local.
+- Share only sanitized example registries.
+- After re-pairing or network changes, assume the `local_key` may have changed.
+
+## Legacy Python note
+
+The previous Python-based controller is intentionally no longer used by the GUI or backend.
+If you still want to preserve it for historical reasons, keep it in a separate `legacy-python/` folder and treat it as unsupported legacy code.
+
+## Why this version is the default now
+
+Compared to the old Python path, the current Go-based version is:
+
+- faster in real use
+- simpler to deploy
+- easier to ship as a standalone tool
+- cleaner to maintain as one supported path
+
+## Screenshot
+
+![Tuya Lights GUI](./screenshot.png)

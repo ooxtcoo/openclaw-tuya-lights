@@ -46,24 +46,12 @@ var validActions = map[string]struct{}{
 	ActionColdWhite:  {},
 }
 
-var aliases = map[string]string{
-	"kueche":               "kitchen",
-	"küche":                "kitchen",
-	"kuechenlampe":         "kitchen",
-	"küchenlampe":          "kitchen",
-	"kitchen":              "kitchen",
-	"stehlampe":            "livingroom_floor",
-	"wohnzimmer":           "livingroom_floor",
-	"wohnzimmer-stehlampe": "livingroom_floor",
-	"stehlampe-wohnzimmer": "livingroom_floor",
-	"livingroom_floor":     "livingroom_floor",
-	"vorzimmer":            "vorzimmer",
-	"vorzimmer1":           "vorzimmer1",
-	"vorzimmer2":           "vorzimmer2",
-	"vorzimmer3":           "vorzimmer3",
-	"vorzimmer4":           "vorzimmer4",
-	"all":                  "all",
-	"alle":                 "all",
+var legacyAliases = map[string]string{
+	"kueche":       "kitchen",
+	"küche":        "kitchen",
+	"kuechenlampe": "kitchen",
+	"küchenlampe":  "kitchen",
+	"alle":         "all",
 }
 
 var colorMap = map[string]*rgbColor{
@@ -132,6 +120,10 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		return errors.New("stderr writer is required")
 	}
 
+	if len(args) > 0 && strings.EqualFold(strings.TrimSpace(args[0]), "group") {
+		return runGroupCommand(args[1:], stdout, stderr)
+	}
+
 	req, err := ParseArgs(args)
 	if err != nil {
 		if errors.Is(err, errHelp) {
@@ -157,7 +149,7 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	resolvedTarget := ResolveName(req.Lamp)
+	resolvedTarget := ResolveName(req.Lamp, reg)
 	if members, ok := reg.Groups[resolvedTarget]; ok {
 		if req.Action != ActionOn && req.Action != ActionOff && req.Action != ActionStatus {
 			return errors.New("für Gruppen sind derzeit nur on/off/status erlaubt")
@@ -419,33 +411,251 @@ func ParseArgs(args []string) (Request, error) {
 }
 
 func LoadRegistry() (Registry, error) {
-	candidates := []string{"tuya_lamps.json", filepath.Join("..", "tuya-lights", "tuya_lamps.json")}
-	for _, candidate := range candidates {
-		data, err := os.ReadFile(candidate)
-		if err != nil {
-			continue
-		}
-		var reg Registry
-		if err := json.Unmarshal(data, &reg); err != nil {
-			return Registry{}, fmt.Errorf("parse registry %s: %w", candidate, err)
-		}
-		if reg.Lamps == nil {
-			reg.Lamps = map[string]Lamp{}
-		}
-		if reg.Groups == nil {
-			reg.Groups = map[string][]string{}
-		}
-		return reg, nil
+	path, err := registryPath()
+	if err != nil {
+		return Registry{}, err
 	}
-	return Registry{}, errors.New("tuya_lamps.json not found")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Registry{}, err
+	}
+	var reg Registry
+	if err := json.Unmarshal(data, &reg); err != nil {
+		return Registry{}, fmt.Errorf("parse registry %s: %w", path, err)
+	}
+	return normalizeRegistry(reg), nil
 }
 
-func ResolveName(name string) string {
-	key := strings.ToLower(strings.TrimSpace(name))
-	if resolved, ok := aliases[key]; ok {
-		return resolved
+func registryPath() (string, error) {
+	candidates := []string{"tuya_lamps.json", filepath.Join("..", "tuya-lights", "tuya_lamps.json")}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", errors.New("tuya_lamps.json not found")
+}
+
+func normalizeRegistry(reg Registry) Registry {
+	if reg.Lamps == nil {
+		reg.Lamps = map[string]Lamp{}
+	}
+	if reg.Groups == nil {
+		reg.Groups = map[string][]string{}
+	}
+	known := map[string]struct{}{}
+	for lampID, lamp := range reg.Lamps {
+		lamp.Name = strings.TrimSpace(lamp.Name)
+		if lamp.Name == "" {
+			lamp.Name = lampID
+		}
+		lamp.DeviceID = strings.TrimSpace(lamp.DeviceID)
+		lamp.IP = strings.TrimSpace(lamp.IP)
+		lamp.LocalKey = strings.TrimSpace(lamp.LocalKey)
+		lamp.Type = strings.TrimSpace(lamp.Type)
+		if lamp.Type == "" {
+			lamp.Type = "bulb"
+		}
+		if lamp.Version == 0 {
+			lamp.Version = 3.3
+		}
+		if lamp.DPS == nil {
+			lamp.DPS = map[string]interface{}{"power": 20}
+		}
+		reg.Lamps[lampID] = lamp
+		known[lampID] = struct{}{}
+	}
+	groups := map[string][]string{}
+	for groupName, members := range reg.Groups {
+		cleanName := strings.TrimSpace(groupName)
+		if cleanName == "" {
+			continue
+		}
+		seen := map[string]struct{}{}
+		cleaned := make([]string, 0, len(members))
+		for _, member := range members {
+			lampID := strings.TrimSpace(member)
+			if lampID == "" {
+				continue
+			}
+			if _, ok := known[lampID]; !ok {
+				continue
+			}
+			if _, exists := seen[lampID]; exists {
+				continue
+			}
+			seen[lampID] = struct{}{}
+			cleaned = append(cleaned, lampID)
+		}
+		groups[cleanName] = cleaned
+	}
+	reg.Groups = groups
+	return reg
+}
+
+func SaveRegistry(reg Registry) error {
+	path, err := registryPath()
+	if err != nil {
+		return err
+	}
+	reg = normalizeRegistry(reg)
+	data, err := json.MarshalIndent(reg, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	return os.WriteFile(path, data, 0644)
+}
+
+func ResolveName(name string, reg Registry) string {
+	key := normalizeLookupKey(name)
+	if key == "" {
+		return key
+	}
+
+	for lampID := range reg.Lamps {
+		if normalizeLookupKey(lampID) == key {
+			return lampID
+		}
+	}
+	for groupID := range reg.Groups {
+		if normalizeLookupKey(groupID) == key {
+			return groupID
+		}
+	}
+
+	for lampID, lamp := range reg.Lamps {
+		if normalizeLookupKey(lamp.Name) == key {
+			return lampID
+		}
+	}
+
+	if resolved, ok := legacyAliases[key]; ok {
+		if _, hasLamp := reg.Lamps[resolved]; hasLamp {
+			return resolved
+		}
+		if _, hasGroup := reg.Groups[resolved]; hasGroup {
+			return resolved
+		}
 	}
 	return key
+}
+
+func normalizeLookupKey(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	replacer := strings.NewReplacer(
+		"ä", "ae",
+		"ö", "oe",
+		"ü", "ue",
+		"ß", "ss",
+	)
+	s = replacer.Replace(s)
+	var b strings.Builder
+	prevUnderscore := false
+	for _, r := range s {
+		isAsciiLower := r >= 'a' && r <= 'z'
+		isDigit := r >= '0' && r <= '9'
+		if isAsciiLower || isDigit {
+			b.WriteRune(r)
+			prevUnderscore = false
+			continue
+		}
+		if prevUnderscore {
+			continue
+		}
+		b.WriteRune('_')
+		prevUnderscore = true
+	}
+	return strings.Trim(b.String(), "_")
+}
+
+func runGroupCommand(args []string, stdout, stderr io.Writer) error {
+	if len(args) == 0 || isHelp(args[0]) {
+		_, _ = fmt.Fprint(stdout, Usage())
+		return nil
+	}
+	reg, err := LoadRegistry()
+	if err != nil {
+		return err
+	}
+
+	sub := strings.ToLower(strings.TrimSpace(args[0]))
+	switch sub {
+	case "list":
+		result := map[string]interface{}{"groups": reg.Groups}
+		return writeJSON(stdout, result)
+	case "create":
+		if len(args) < 2 {
+			return fmt.Errorf("%w: group create <name>", errUsage)
+		}
+		name := strings.TrimSpace(args[1])
+		if name == "" {
+			return fmt.Errorf("%w: group name must not be empty", errUsage)
+		}
+		resolved := ResolveName(name, reg)
+		if _, exists := reg.Groups[resolved]; exists {
+			return fmt.Errorf("group already exists: %s", resolved)
+		}
+		reg.Groups[name] = []string{}
+		if err := SaveRegistry(reg); err != nil {
+			return err
+		}
+		return writeJSON(stdout, map[string]interface{}{"ok": true, "action": "create", "group": name, "members": []string{}})
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("%w: group delete <name>", errUsage)
+		}
+		name := ResolveName(args[1], reg)
+		if _, exists := reg.Groups[name]; !exists {
+			return fmt.Errorf("group not found: %s", args[1])
+		}
+		delete(reg.Groups, name)
+		if err := SaveRegistry(reg); err != nil {
+			return err
+		}
+		return writeJSON(stdout, map[string]interface{}{"ok": true, "action": "delete", "group": name})
+	case "add", "remove":
+		if len(args) < 3 {
+			return fmt.Errorf("%w: group %s <group> <lamp>", errUsage, sub)
+		}
+		groupName := ResolveName(args[1], reg)
+		members, exists := reg.Groups[groupName]
+		if !exists {
+			return fmt.Errorf("group not found: %s", args[1])
+		}
+		lampName := ResolveName(args[2], reg)
+		if _, exists := reg.Lamps[lampName]; !exists {
+			return fmt.Errorf("lamp not found: %s", args[2])
+		}
+		if sub == "add" {
+			seen := false
+			for _, member := range members {
+				if member == lampName {
+					seen = true
+					break
+				}
+			}
+			if !seen {
+				members = append(members, lampName)
+			}
+		} else {
+			filtered := make([]string, 0, len(members))
+			for _, member := range members {
+				if member != lampName {
+					filtered = append(filtered, member)
+				}
+			}
+			members = filtered
+		}
+		reg.Groups[groupName] = members
+		if err := SaveRegistry(reg); err != nil {
+			return err
+		}
+		return writeJSON(stdout, map[string]interface{}{"ok": true, "action": sub, "group": groupName, "lamp": lampName, "members": members})
+	default:
+		_, _ = fmt.Fprint(stderr, Usage())
+		return fmt.Errorf("%w: unknown group command %q", errUsage, sub)
+	}
 }
 
 func Usage() string {
@@ -454,6 +664,11 @@ func Usage() string {
 Usage:
   lampctl <lamp> <action> [--value <value>] [--dp <dp>]
   lampctl discover
+  lampctl group list
+  lampctl group create <name>
+  lampctl group delete <name>
+  lampctl group add <group> <lamp>
+  lampctl group remove <group> <lamp>
 
 Positional arguments:
   lamp        lamp/group name from registry
@@ -472,11 +687,15 @@ Examples:
   lampctl stehlampe hue --value 180
   lampctl kitchen raw --dp 20 --value true
   lampctl discover
+  lampctl group create wohnzimmer
+  lampctl group add wohnzimmer stehlampe_wohnzimmer
+  lampctl group remove wohnzimmer stehlampe_wohnzimmer
+  lampctl group delete wohnzimmer
 
 Notes:
   Copyright (c) by ooxtcoo aka Harald Kubovy.
   Current build supports discover, status, on, off, raw, brightness,
-  temp, color, hue, white, warmwhite and coldwhite.
+  temp, color, hue, white, warmwhite, coldwhite and group management.
 `, "\n")
 }
 
