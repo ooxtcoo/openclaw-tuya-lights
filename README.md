@@ -1,5 +1,7 @@
 # openclaw-tuya-lights
 
+![Tuya Lights Banner](./banner.png)
+
 Fast local Tuya light control for OpenClaw, centered on a Go-based CLI and a clean web GUI.
 
 This project has now moved to a **Go-first architecture**.
