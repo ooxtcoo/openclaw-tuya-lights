@@ -150,4 +150,5 @@ Compared to the old Python path, the current Go-based version is:
 
 ## Screenshot
 
+![Tuya Lights GUI](./screenshot2.png)
 ![Tuya Lights GUI](./screenshot.png)
